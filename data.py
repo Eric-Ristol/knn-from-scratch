@@ -1,27 +1,11 @@
 import numpy as np
 import os
 
-"""
-Generates the data of a Pacific Northwest forest.
-
-Western Red Cedar   Height (m): 22.0    Width (m): 3.2
-Lodgepole Pine      Height (m): 28.0    Width (m): 0.4
-"""
-
 DATA_PATH = os.path.join(os.path.dirname(__file__), "trees.csv")
 
 LABELS = {0: "Western Red Cedar", 1: "Lodgepole Pine"}
 
-
 def generate_data(n_samples=100):
-    """
-    Generates synthetic tree measurements and saves them to trees.csv.
-
-    Class 0 = "Western Red Cedar"
-    Class 1 = "Lodgepole Pine"
-
-    loc = mean, scale = standard deviation
-    """
 
     # --- Western Red Cedar ---
     cedars_height = np.random.normal(loc=22.0, scale=3.2, size=n_samples // 2)
@@ -51,9 +35,7 @@ def generate_data(n_samples=100):
 
     return X, y
 
-
 def load_data():
-    """Loads the CSV created by generate_data and returns X, y arrays."""
     if not os.path.exists(DATA_PATH):
         raise FileNotFoundError(
             f"No dataset found at {DATA_PATH}. "
@@ -64,12 +46,7 @@ def load_data():
     y = data[:, 2]    # label (0 or 1)
     return X, y
 
-
 def train_test_split(X, y, test_size=0.2):
-    """
-    Splits X and y into train/test sets.
-    Uses a fixed random seed so results are reproducible across runs.
-    """
     n = len(y)
     n_test = int(n * test_size)
 

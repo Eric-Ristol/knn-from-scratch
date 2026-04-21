@@ -7,3 +7,7 @@ dist/
 build/
 .env
 wandb/
+
+# Compiled C binary
+/knn
+*.o

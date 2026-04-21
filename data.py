@@ -1,59 +1,64 @@
-import numpy as np
+"""
+data.py -- regenerate trees.csv (a synthetic 2-feature, 2-class dataset).
+
+This script is a utility, not part of the classifier. Run it once (or any time
+you want a fresh dataset) and both knn.py and knn.c will read the resulting
+trees.csv.
+
+    python data.py                # 200 samples, seed=0 (default)
+    python data.py 500            # 500 samples, seed=0
+    python data.py 500 7          # 500 samples, seed=7
+
+Output format (CSV, header row):
+
+    height,width,label
+    23.164248,0.329318,Pine
+    27.387290,2.732337,Cedar
+    ...
+
+Labels are strings ("Cedar", "Pine") so both the C and Python classifiers can
+handle them as opaque tokens. A fixed NumPy seed makes the file reproducible.
+"""
+
 import os
+import sys
+import numpy as np
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "trees.csv")
 
-LABELS = {0: "Western Red Cedar", 1: "Lodgepole Pine"}
 
-def generate_data(n_samples=100):
+def generate_data(n_samples=200, seed=0):
+    rng = np.random.default_rng(seed)
 
-    # --- Western Red Cedar ---
-    cedars_height = np.random.normal(loc=22.0, scale=3.2, size=n_samples // 2)
-    cedars_width  = np.random.normal(loc=3.2,  scale=0.4, size=n_samples // 2)
+    half = n_samples // 2
 
-    # Combine height and width into feature pairs
-    cedars   = np.column_stack((cedars_height, cedars_width))
-    l_cedars = np.zeros(n_samples // 2)
+    # Western Red Cedar: shorter, much thicker trunk.
+    cedars_height = rng.normal(loc=22.0, scale=3.2, size=half)
+    cedars_width  = rng.normal(loc=3.2,  scale=0.4, size=half)
+    cedars = np.column_stack((cedars_height, cedars_width))
 
-    # --- Lodgepole Pine ---
-    pine_height = np.random.normal(loc=28.0, scale=4.0, size=n_samples // 2)
-    pine_width  = np.random.normal(loc=0.4,  scale=0.1, size=n_samples // 2)
-    pines   = np.column_stack((pine_height, pine_width))
-    l_pines = np.ones(n_samples // 2)
+    # Lodgepole Pine: taller, slim trunk.
+    pines_height = rng.normal(loc=28.0, scale=4.0, size=half)
+    pines_width  = rng.normal(loc=0.4,  scale=0.1, size=half)
+    pines = np.column_stack((pines_height, pines_width))
 
-    # Stack both classes together and shuffle
     X = np.vstack((cedars, pines))
-    y = np.concatenate((l_cedars, l_pines))
+    labels = ["Cedar"] * half + ["Pine"] * half
 
-    idx = np.random.permutation(len(y))
-    X, y = X[idx], y[idx]
+    # Shuffle rows so the file isn't sorted by class.
+    idx = rng.permutation(len(labels))
+    X = X[idx]
+    labels = [labels[i] for i in idx]
 
-    # Save to CSV (header: height,width,label)
-    data = np.column_stack((X, y))
-    np.savetxt(DATA_PATH, data, delimiter=",", header="height,width,label", comments="")
-    print(f"Dataset saved to {DATA_PATH}  ({n_samples} samples)")
+    with open(DATA_PATH, "w") as f:
+        f.write("height,width,label\n")
+        for (h, w), lbl in zip(X, labels):
+            f.write(f"{h:.6f},{w:.6f},{lbl}\n")
 
-    return X, y
+    print(f"Wrote {DATA_PATH}  ({n_samples} samples, seed={seed})")
 
-def load_data():
-    if not os.path.exists(DATA_PATH):
-        raise FileNotFoundError(
-            f"No dataset found at {DATA_PATH}. "
-            "Run option I first to generate it."
-        )
-    data = np.loadtxt(DATA_PATH, delimiter=",", skiprows=1)
-    X = data[:, :2]   # height, width
-    y = data[:, 2]    # label (0 or 1)
-    return X, y
 
-def train_test_split(X, y, test_size=0.2):
-    n = len(y)
-    n_test = int(n * test_size)
-
-    rng = np.random.default_rng(seed=42)
-    idx = rng.permutation(n)
-
-    test_idx  = idx[:n_test]
-    train_idx = idx[n_test:]
-
-    return X[train_idx], X[test_idx], y[train_idx], y[test_idx]
+if __name__ == "__main__":
+    n    = int(sys.argv[1]) if len(sys.argv) > 1 else 200
+    seed = int(sys.argv[2]) if len(sys.argv) > 2 else 0
+    generate_data(n_samples=n, seed=seed)
